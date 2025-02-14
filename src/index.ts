@@ -1,7 +1,7 @@
 import express, { json } from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { Content, User } from "./model/schema";
+import { Content, Link, User } from "./model/schema";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { authenticateToken } from "./middleware/auth";
@@ -10,6 +10,10 @@ dotenv.config();
 const app = express();
 const port = process.env.port || 5000;
 app.use(express.json());
+
+interface userIn {
+  userId: string;
+}
 
 app.post("/api/v1/signup", async (req, res) => {
   const { username, password } = req.body;
@@ -112,11 +116,90 @@ app.post("/api/v1/content", authenticateToken, async (req, res) => {
   }
 });
 
-app.get("/api/v1/content", (req, res) => {});
+app.get("/api/v1/content", authenticateToken, async (req, res) => {
+  //@ts-ignore
+  const userId = await req.userId;
 
-app.post("/api/v1/vrain/share", (req, res) => {});
+  try {
+    const data = await Content.find({
+      userId: userId,
+    }).populate(userId, "username");
 
-app.get("/api/v1/vrain/:shareLink", (req, res) => {});
+    res.status(200).json({
+      message: "Content fetched successfully",
+      data: data,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+app.post("/api/v1/vrain/share", authenticateToken, async (req, res) => {
+  const { contentId } = req.body; // Extract contentId properly
+  if (!contentId) {
+    res.status(400).json({ message: "contentId is required" });
+    return;
+  }
+  //@ts-ignore
+  const userId = req.id;
+
+  console.log("User ID:", userId);
+  console.log("Content ID:", contentId);
+
+  if (!userId) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const hash = await bcrypt.hash(String(contentId), 2);
+    const shortLink = hash.slice(0, 9);
+    const hashlink = await Link.create({
+      contentId,
+      hash: shortLink,
+      userId,
+    });
+    res.status(200).json({
+      message: "Content shared successfully",
+      data: hashlink,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+app.get("/api/v1/vrain/:shareLink", async (req, res) => {
+  const { shareLink } = req.params;
+  if (!shareLink) {
+    res.status(400).json({
+      message: "Invalid share link",
+    });
+    return;
+  }
+  try {
+    const isValid = await Link.find({
+      hash: shareLink,
+    });
+
+    if (!isValid) {
+      res.status(404).json({
+        message: "Content not found",
+      });
+      return;
+    }
+
+    const contentId = isValid[0].contentId;
+    const data = await Content.findOne({
+      _id: contentId,
+    });
+    res.status(200).json({
+      message: "Content found",
+      data,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
 
 function main() {
   mongoose

@@ -112,9 +112,78 @@ app.post("/api/v1/content", auth_1.authenticateToken, (req, res) => __awaiter(vo
         console.log(err);
     }
 }));
-app.get("/api/v1/content", (req, res) => { });
-app.post("/api/v1/vrain/share", (req, res) => { });
-app.get("/api/v1/vrain/:shareLink", (req, res) => { });
+app.get("/api/v1/content", auth_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //@ts-ignore
+    const userId = yield req.userId;
+    try {
+        const data = yield schema_1.Content.find({
+            userId: userId,
+        }).populate(userId, "username");
+        res.status(200).json({
+            message: "Content fetched successfully",
+            data: data,
+        });
+    }
+    catch (err) {
+        console.log(err);
+    }
+}));
+app.post("/api/v1/vrain/share", auth_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { contentId } = req.body; // Extract contentId properly
+    if (!contentId) {
+        res.status(400).json({ message: "contentId is required" });
+        return;
+    }
+    //@ts-ignore
+    const userId = req.id;
+    console.log("User ID:", userId);
+    console.log("Content ID:", contentId);
+    if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+    try {
+        const hash = yield bcryptjs_1.default.hash(String(contentId), 2);
+        const shortLink = hash.slice(0, 9);
+        const hashlink = yield schema_1.Link.create({
+            contentId,
+            hash: shortLink,
+            userId,
+        });
+        res.status(200).json({
+            message: "Content shared successfully",
+            data: hashlink,
+        });
+    }
+    catch (err) {
+        console.log(err);
+    }
+}));
+app.get("/api/v1/vrain/:shareLink", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { shareLink } = req.params;
+    if (!shareLink) {
+        res.status(400).json({
+            message: "Invalid share link",
+        });
+    }
+    const isValid = yield schema_1.Link.find({
+        hash: shareLink,
+    });
+    if (!isValid) {
+        res.status(404).json({
+            message: "Content not found",
+        });
+        return;
+    }
+    const contentId = isValid[0].contentId;
+    const data = yield schema_1.Content.findOne({
+        _id: contentId,
+    });
+    res.status(200).json({
+        message: "Content found",
+        data,
+    });
+}));
 function main() {
     mongoose_1.default
         .connect(process.env.uri)
