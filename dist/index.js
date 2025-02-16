@@ -19,10 +19,12 @@ const schema_1 = require("./model/schema");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const auth_1 = require("./middleware/auth");
+const cors_1 = __importDefault(require("cors"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = process.env.port || 5000;
 app.use(express_1.default.json());
+app.use((0, cors_1.default)());
 app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, password } = req.body;
     if (!username || !password) {
@@ -90,12 +92,6 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
 app.post("/api/v1/content", auth_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const link = req.body.link;
     const title = req.body.title;
-    //   if (!link || !type || !title || !tags) {
-    //     res.status(403).json({
-    //       message: "Please provide all required fields",
-    //     });
-    //     return;
-    //   }
     try {
         const data = yield schema_1.Content.create({
             link,
@@ -114,14 +110,15 @@ app.post("/api/v1/content", auth_1.authenticateToken, (req, res) => __awaiter(vo
 }));
 app.get("/api/v1/content", auth_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
-    const userId = yield req.userId;
+    const userId = yield req.id;
+    console.log(userId);
     try {
         const data = yield schema_1.Content.find({
             userId: userId,
-        }).populate(userId, "username");
+        });
         res.status(200).json({
-            message: "Content fetched successfully",
-            data: data,
+            message: "successfully",
+            Content: data,
         });
     }
     catch (err) {
@@ -165,24 +162,30 @@ app.get("/api/v1/vrain/:shareLink", (req, res) => __awaiter(void 0, void 0, void
         res.status(400).json({
             message: "Invalid share link",
         });
-    }
-    const isValid = yield schema_1.Link.find({
-        hash: shareLink,
-    });
-    if (!isValid) {
-        res.status(404).json({
-            message: "Content not found",
-        });
         return;
     }
-    const contentId = isValid[0].contentId;
-    const data = yield schema_1.Content.findOne({
-        _id: contentId,
-    });
-    res.status(200).json({
-        message: "Content found",
-        data,
-    });
+    try {
+        const isValid = yield schema_1.Link.find({
+            hash: shareLink,
+        });
+        if (!isValid) {
+            res.status(404).json({
+                message: "Content not found",
+            });
+            return;
+        }
+        const contentId = isValid[0].contentId;
+        const data = yield schema_1.Content.findOne({
+            _id: contentId,
+        });
+        res.status(200).json({
+            message: "Content found",
+            data,
+        });
+    }
+    catch (err) {
+        console.log(err);
+    }
 }));
 function main() {
     mongoose_1.default

@@ -5,11 +5,13 @@ import { Content, Link, User } from "./model/schema";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { authenticateToken } from "./middleware/auth";
+import cors from "cors";
 
 dotenv.config();
 const app = express();
 const port = process.env.port || 5000;
 app.use(express.json());
+app.use(cors());
 
 interface userIn {
   userId: string;
@@ -92,13 +94,6 @@ app.post("/api/v1/content", authenticateToken, async (req, res) => {
   const link = req.body.link;
   const title = req.body.title;
 
-  //   if (!link || !type || !title || !tags) {
-  //     res.status(403).json({
-  //       message: "Please provide all required fields",
-  //     });
-  //     return;
-  //   }
-
   try {
     const data = await Content.create({
       link,
@@ -118,16 +113,16 @@ app.post("/api/v1/content", authenticateToken, async (req, res) => {
 
 app.get("/api/v1/content", authenticateToken, async (req, res) => {
   //@ts-ignore
-  const userId = await req.userId;
+  const userId = await req.id;
+  console.log(userId);
 
   try {
     const data = await Content.find({
       userId: userId,
-    }).populate(userId, "username");
-
+    });
     res.status(200).json({
-      message: "Content fetched successfully",
-      data: data,
+      message: "successfully",
+      Content: data,
     });
   } catch (err) {
     console.log(err);
