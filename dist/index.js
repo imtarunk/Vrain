@@ -92,11 +92,13 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
 app.post("/api/v1/content", auth_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const link = req.body.link;
     const title = req.body.title;
+    const type = req.body.type;
     const description = req.body.description;
     try {
         const data = yield schema_1.Content.create({
             link,
             title,
+            type,
             description,
             tags: [], //@ts-ignore
             userId: req.id,

@@ -45,7 +45,7 @@ const tagSchema = new mongoose_1.default.Schema({
 });
 const contentSchema = new mongoose_1.Schema({
     link: { type: String, required: true },
-    // type: { type: String, enum: contentTypes, required: true },
+    type: { type: String },
     title: { type: String, required: true },
     description: { type: String, required: true },
     tags: [{ type: mongoose_1.default.Types.ObjectId, ref: "Tag" }],

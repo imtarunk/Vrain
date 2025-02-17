@@ -93,12 +93,14 @@ app.post("/api/v1/signin", async (req, res) => {
 app.post("/api/v1/content", authenticateToken, async (req, res) => {
   const link = req.body.link;
   const title = req.body.title;
+  const type = req.body.type;
   const description = req.body.description;
 
   try {
     const data = await Content.create({
       link,
       title,
+      type,
       description,
       tags: [], //@ts-ignore
       userId: req.id,

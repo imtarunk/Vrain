@@ -13,7 +13,7 @@ const tagSchema = new mongoose.Schema({
 
 const contentSchema = new Schema({
   link: { type: String, required: true },
-  // type: { type: String, enum: contentTypes, required: true },
+  type: { type: String },
   title: { type: String, required: true },
   description: { type: String, required: true },
   tags: [{ type: mongoose.Types.ObjectId, ref: "Tag" }],
