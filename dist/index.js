@@ -192,6 +192,29 @@ app.get("/api/v1/vrain/:shareLink", (req, res) => __awaiter(void 0, void 0, void
         console.log(err);
     }
 }));
+app.get("/api/v1/all-links", auth_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //@ts-ignore
+    const userId = req.id; // Extract user ID from the request
+    if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+    try {
+        // Fetch links belonging to the user
+        const data = yield schema_1.Link.find({ userId });
+        if (!data || data.length === 0) {
+            res.status(404).json({ message: "No links found" });
+        }
+        res.status(200).json({
+            message: "Links found",
+            data,
+        });
+    }
+    catch (err) {
+        console.error("Error fetching links:", err);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+}));
 function main() {
     mongoose_1.default
         .connect(process.env.uri)
