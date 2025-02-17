@@ -134,7 +134,7 @@ app.get("/api/v1/content", authenticateToken, async (req, res) => {
 });
 
 app.post("/api/v1/vrain/share", authenticateToken, async (req, res) => {
-  const { contentId } = req.body; // Extract contentId properly
+  const { contentId, status } = req.body; // Extract contentId properly
   if (!contentId) {
     res.status(400).json({ message: "contentId is required" });
     return;
@@ -156,6 +156,7 @@ app.post("/api/v1/vrain/share", authenticateToken, async (req, res) => {
     const hashlink = await Link.create({
       contentId,
       hash: shortLink,
+      status, // default status is true
       userId,
     });
     res.status(200).json({

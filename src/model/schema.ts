@@ -21,8 +21,9 @@ const contentSchema = new Schema({
 });
 
 const linkSchema = new mongoose.Schema({
-  contentId: { type: String, required: true }, // This is the content's ID
+  contentId: { type: String, required: true }, // Assuming unique contentId
   hash: { type: String, required: true },
+  status: { type: Boolean, required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 });
 

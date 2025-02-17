@@ -130,7 +130,7 @@ app.get("/api/v1/content", auth_1.authenticateToken, (req, res) => __awaiter(voi
     }
 }));
 app.post("/api/v1/vrain/share", auth_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { contentId } = req.body; // Extract contentId properly
+    const { contentId, status } = req.body; // Extract contentId properly
     if (!contentId) {
         res.status(400).json({ message: "contentId is required" });
         return;
@@ -149,6 +149,7 @@ app.post("/api/v1/vrain/share", auth_1.authenticateToken, (req, res) => __awaite
         const hashlink = yield schema_1.Link.create({
             contentId,
             hash: shortLink,
+            status, // default status is true
             userId,
         });
         res.status(200).json({
