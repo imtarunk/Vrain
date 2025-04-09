@@ -231,5 +231,19 @@ function main() {
         console.log(`server is running on port ${port}`);
     });
 }
+app.delete("/api/v1/delete/:id", auth_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    if (!id) {
+        res.status(400).json({ message: "ID is required" });
+        return;
+    }
+    try {
+        const data = yield schema_1.Content.findByIdAndDelete(id);
+        res.status(200).json({ message: "Content deleted successfully" });
+    }
+    catch (err) {
+        console.log(err);
+    }
+}));
 main();
 // 6cqL0HjXuSfdpNL0

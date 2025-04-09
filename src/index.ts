@@ -1,4 +1,4 @@
-import express, { json } from "express";
+import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { Content, Link, User } from "./model/schema";
@@ -245,6 +245,24 @@ function main() {
     console.log(`server is running on port ${port}`);
   });
 }
+
+app.delete("/api/v1/delete/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    res.status(400).json({ message: "ID is required" });
+    return;
+  }
+  try {
+    const data = await Content.findByIdAndDelete(id);
+    res.status(200).json({ message: "Content deleted successfully" });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+app.get("/*", (req, res) => {
+  res.status(404).json({ message: "Page not found" });
+});
 
 main();
 
