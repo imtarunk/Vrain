@@ -3,9 +3,10 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 
 dotenv.config();
-declare module "express" {
-  export interface Request {
-    user?: { userId: string };
+
+declare module "express-serve-static-core" {
+  interface Request {
+    id?: string;
   }
 }
 
@@ -25,9 +26,8 @@ export const authenticateToken = (
 
   try {
     const decoded = jwt.verify(token, process.env.jwt_key as string) as {
-      userId: string;
+      _id: string;
     };
-    //@ts-ignore
     req.id = decoded._id;
     next();
   } catch (error) {

@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Link = exports.Content = exports.User = exports.Tag = void 0;
+exports.Permission = exports.Note = exports.Link = exports.Content = exports.User = exports.Tag = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const contentTypes = ["image", "video", "article", "audio"]; // Extend as needed
 const UserSchema = new mongoose_1.Schema({
@@ -57,7 +57,29 @@ const linkSchema = new mongoose_1.default.Schema({
     status: { type: Boolean, required: true },
     userId: { type: mongoose_1.default.Schema.Types.ObjectId, ref: "User", required: true },
 });
+// New schemas for notes and permissions
+const noteSchema = new mongoose_1.Schema({
+    title: { type: String, required: true },
+    content: { type: String, required: true },
+    userId: { type: mongoose_1.default.Types.ObjectId, ref: "User", required: true },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+    tags: [{ type: mongoose_1.default.Types.ObjectId, ref: "Tag" }],
+    isPublic: { type: Boolean, default: false },
+});
+const permissionSchema = new mongoose_1.Schema({
+    noteId: { type: mongoose_1.default.Types.ObjectId, ref: "Note", required: true },
+    userId: { type: mongoose_1.default.Types.ObjectId, ref: "User", required: true },
+    permissionType: {
+        type: String,
+        enum: ["view", "edit", "admin"],
+        default: "view",
+    },
+    createdAt: { type: Date, default: Date.now },
+});
 exports.Tag = mongoose_1.default.model("Tag", tagSchema);
 exports.User = mongoose_1.default.model("User", UserSchema);
 exports.Content = mongoose_1.default.model("Content", contentSchema);
 exports.Link = mongoose_1.default.model("Link", linkSchema); // Export the model
+exports.Note = mongoose_1.default.model("Note", noteSchema);
+exports.Permission = mongoose_1.default.model("Permission", permissionSchema);

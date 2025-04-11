@@ -1,7 +1,7 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { Content, Link, User } from "./model/schema";
+import { Content, Link, User, Note, Permission } from "./model/schema";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { authenticateToken } from "./middleware/auth";
@@ -235,6 +235,214 @@ app.get("/api/v1/all-links", authenticateToken, async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+// Note endpoints
+app.post("/api/v1/notes", authenticateToken, async (req, res) => {
+  const { title, content, tags, isPublic } = req.body;
+  try {
+    if (!title || !content) {
+      res.status(400).json({ message: "Title and content are required" });
+      return;
+    }
+
+    const note = await Note.create({
+      title,
+      content,
+      tags: tags || [],
+      isPublic: isPublic || false,
+      userId: req.id,
+    });
+
+    res.status(201).json({
+      message: "Note created successfully",
+      note,
+    });
+  } catch (error) {
+    console.error("Error creating note:", error);
+    res.status(500).json({ message: "Failed to create note" });
+  }
+});
+
+app.get("/api/v1/notes", authenticateToken, async (req, res) => {
+  try {
+    const notes = await Note.find({ userId: req.id })
+      .sort({ updatedAt: -1 })
+      .limit(10);
+
+    const sharedNotes = await Permission.find({ userId: req.id })
+      .populate("noteId")
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    res.status(200).json({
+      message: "Notes fetched successfully",
+      notes,
+      sharedNotes: sharedNotes.map((p) => p.noteId),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching notes" });
+  }
+});
+
+// Add GET endpoint for single note
+app.get("/api/v1/notes/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  console.log("Fetching note with ID:", id);
+  console.log("User ID from token:", req.id);
+
+  try {
+    // First check if user owns the note
+    const note = await Note.findOne({ _id: id, userId: req.id });
+    console.log("Note found by ownership:", note ? "Yes" : "No");
+
+    if (note) {
+      res.status(200).json({ note });
+      return;
+    }
+
+    // If not owner, check if note is public
+    const publicNote = await Note.findOne({ _id: id, isPublic: true });
+    console.log("Public note found:", publicNote ? "Yes" : "No");
+
+    if (publicNote) {
+      res.status(200).json({ note: publicNote });
+      return;
+    }
+
+    // If not public, check if user has permission
+    const permission = await Permission.findOne({ noteId: id, userId: req.id });
+    console.log("Permission found:", permission ? "Yes" : "No");
+
+    if (permission) {
+      const sharedNote = await Note.findById(id);
+      res.status(200).json({ note: sharedNote });
+      return;
+    }
+
+    console.log("Note not found or user doesn't have access");
+    res.status(404).json({ message: "Note not found" });
+  } catch (err) {
+    console.error("Error in GET /api/v1/notes/:id:", err);
+    res.status(500).json({ message: "Error fetching note" });
+  }
+});
+
+app.put(
+  "/api/v1/notes/:id",
+  authenticateToken,
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    const { title, content, tags, isPublic } = req.body;
+
+    try {
+      const note = await Note.findOne({ _id: id, userId: req.id });
+      if (!note) {
+        res.status(404).json({ message: "Note not found" });
+        return;
+      }
+
+      const updatedNote = await Note.findByIdAndUpdate(
+        id,
+        { title, content, tags, isPublic, updatedAt: Date.now() },
+        { new: true }
+      );
+
+      res.status(200).json({
+        message: "Note updated successfully",
+        note: updatedNote,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Error updating note" });
+    }
+  }
+);
+
+app.delete(
+  "/api/v1/notes/:id",
+  authenticateToken,
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+
+    try {
+      const note = await Note.findOne({ _id: id, userId: req.id });
+      if (!note) {
+        res.status(404).json({ message: "Note not found" });
+        return;
+      }
+
+      await Note.findByIdAndDelete(id);
+      await Permission.deleteMany({ noteId: id });
+
+      res.status(200).json({ message: "Note deleted successfully" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Error deleting note" });
+    }
+  }
+);
+
+// Permission endpoints
+app.post(
+  "/api/v1/notes/:id/share",
+  authenticateToken,
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    const { userId, permissionType } = req.body;
+
+    try {
+      const note = await Note.findOne({ _id: id, userId: req.id });
+      if (!note) {
+        res.status(404).json({ message: "Note not found" });
+        return;
+      }
+
+      const permission = await Permission.create({
+        noteId: id,
+        userId,
+        permissionType,
+      });
+
+      res.status(201).json({
+        message: "Permission granted successfully",
+        permission,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Error sharing note" });
+    }
+  }
+);
+
+app.get(
+  "/api/v1/notes/:id/permissions",
+  authenticateToken,
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+
+    try {
+      const note = await Note.findOne({ _id: id, userId: req.id });
+      if (!note) {
+        res.status(404).json({ message: "Note not found" });
+        return;
+      }
+
+      const permissions = await Permission.find({ noteId: id }).populate(
+        "userId",
+        "username"
+      );
+
+      res.status(200).json({
+        message: "Permissions fetched successfully",
+        permissions,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Error fetching permissions" });
+    }
+  }
+);
 
 function main() {
   mongoose
