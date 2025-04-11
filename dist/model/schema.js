@@ -37,6 +37,7 @@ exports.Permission = exports.Note = exports.Link = exports.Content = exports.Use
 const mongoose_1 = __importStar(require("mongoose"));
 const contentTypes = ["image", "video", "article", "audio"]; // Extend as needed
 const UserSchema = new mongoose_1.Schema({
+    fullname: { type: String, required: true },
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
 });

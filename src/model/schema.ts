@@ -3,6 +3,7 @@ import mongoose, { Schema } from "mongoose";
 const contentTypes = ["image", "video", "article", "audio"]; // Extend as needed
 
 const UserSchema = new Schema({
+  fullname: { type: String, required: true },
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 });

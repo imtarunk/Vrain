@@ -17,6 +17,7 @@ app.use(
       "http://localhost:5173",
       "http://vrain.codextarun.xyz",
       "http://localhost:5174",
+      "http://localhost:3000",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -28,7 +29,7 @@ interface userIn {
 }
 
 app.post("/api/v1/signup", async (req, res) => {
-  const { username, password } = req.body;
+  const { fullname, username, password } = req.body;
 
   if (!username || !password) {
     res
@@ -51,6 +52,7 @@ app.post("/api/v1/signup", async (req, res) => {
     const hashPassword = await bcrypt.hash(password, 5);
 
     const user = User.create({
+      fullname: fullname,
       username: username,
       password: hashPassword,
     });
@@ -94,6 +96,7 @@ app.post("/api/v1/signin", async (req, res) => {
     res.status(200).json({
       message: "User signed in successfully",
       token: token,
+      fullname: user.fullname,
     });
   } catch (err) {
     console.log(err);
@@ -466,6 +469,15 @@ app.delete("/api/v1/delete/:id", authenticateToken, async (req, res) => {
   } catch (err) {
     console.log(err);
   }
+});
+
+app.get("/api/v1/user", authenticateToken, async (req, res) => {
+  const user = await User.findOne({ _id: req.id });
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+  res.status(200).json({ fullname: user.fullname });
 });
 
 app.get("/*", (req, res) => {

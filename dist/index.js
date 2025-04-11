@@ -29,12 +29,13 @@ app.use((0, cors_1.default)({
         "http://localhost:5173",
         "http://vrain.codextarun.xyz",
         "http://localhost:5174",
+        "http://localhost:3000",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { username, password } = req.body;
+    const { fullname, username, password } = req.body;
     if (!username || !password) {
         res
             .status(400)
@@ -53,6 +54,7 @@ app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
         }
         const hashPassword = yield bcryptjs_1.default.hash(password, 5);
         const user = schema_1.User.create({
+            fullname: fullname,
             username: username,
             password: hashPassword,
         });
@@ -91,6 +93,7 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.status(200).json({
             message: "User signed in successfully",
             token: token,
+            fullname: user.fullname,
         });
     }
     catch (err) {
@@ -406,6 +409,14 @@ app.delete("/api/v1/delete/:id", auth_1.authenticateToken, (req, res) => __await
     catch (err) {
         console.log(err);
     }
+}));
+app.get("/api/v1/user", auth_1.authenticateToken, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield schema_1.User.findOne({ _id: req.id });
+    if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+    }
+    res.status(200).json({ fullname: user.fullname });
 }));
 app.get("/*", (req, res) => {
     res.status(404).json({ message: "Page not found" });
